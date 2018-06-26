@@ -17,15 +17,15 @@ The RegEx's can consume IPv4/IPv6 internal IPs and Domains, the observable wont 
 Go Package Dependencies:
 ```
     > "github.com/seiflotfy/cuckoofilter" // MIT License
-    > "github.com/go-redis/redis" //BSD 2 License
+    > "github.com/go-redis/redis" // BSD 2 License
 ```
 
 Applications (not build within the program itself):
 ```
     > Redis
     > Graylog, ELK or Splunk  # Not yet implemented.
-    > RSyslog omhiredis  # Functional but needs work
-    > Suricata  # Mostly Implemented
+    > RSyslog omhiredis  # Functional Support in POC
+    > Suricata  # Functional Support in POC
 ```
 
 
@@ -44,7 +44,7 @@ Data reputation systems classify observations made and recognized by machines su
 
 Observable data is frequently identified by computer security devices, intrusion detection systems, and forensic investigators following an intrusion or other malicious event. When observable data is paired with contextual information it becomes known as an indicator. Indicators are usually given a reputation or risk score.
 
-These Indicators are frequently classified with the industry term "threat Intelligence" and disseminated by both computers and machines to alert computer security teams about threats they may have been previously unaware of. STIX is the standard format by which these observables are shared. 
+These Indicators are frequently classified with the industry term "threat Intelligence" and disseminated by both computers and machines to alert computer security teams about threats they may have been previously unaware of. STIX is the standard format by which these observables are shared.
 
 Many computer security technologies will import this threat intelligence data and match it with same type observables. This has been done through Security Incident and Event Monitoring (SIEM) solutions, antivirus and network or system level intrusion detection systems.
 
@@ -105,7 +105,25 @@ Process breakdown (Daemon):
 
 One process as a gate to make sure we're pulling in data from Redis. If the counts drop below XX EPS in Redis we may wish to take action.
 
-Notes:  Our code is not crash-safe, there is a potential we could lose the data we've already accumulated while parsing, this could be up to 10k events. For this reason, we will use Redis again to write our filters into a temporary queue; which can be configured to write those queues to disk periodically, thus forcing our application to do less heavy lifting. 
+Notes:  Our code is not crash-safe, there is a potential we could lose the data we've already accumulated while parsing, this could be up to 10k events. For this reason, we will use Redis again to write our filters into a temporary queue; which can be configured to write those queues to disk periodically, thus forcing our application to do less heavy lifting.
+
+# A note on SIEMs:
+
+This program will *NOT* replace your current SIEM. It has no correlation capability and should be considered an ENHANCEMENT to an already established SIEM deployment.
+
+Many SIEM's will forward received data to a third party device.
+
+Examples:
+
+    Splunk: http://docs.splunk.com/Documentation/Splunk/6.0/Forwarding/Forwarddatatothird-partysystemsd#Syslog_dat
+
+    Graylog: https://marketplace.graylog.org/addons/8eb67dc0-b855-455c-a37f-0fa8ae522854
+
+    Logstash (ELK): https://www.elastic.co/guide/en/logstash/current/plugins-outputs-syslog.html
+
+Using this functionality and the rsyslog omhiedis configuration, you should be able to index out side of the SIEM without incuring any major search->run external command overhead.
+
+This configuration should work well with a Docker by linking: syslog-ng/rsyslog, redis and HOARD.
 
 
 # Suricata Config:
@@ -132,18 +150,18 @@ Notes:  Our code is not crash-safe, there is a potential we could lose the data 
     Propose Project, document idea and workflow
     Build working POC: Suricata Log -> Send to Redis (PUSH/POP QUEUE), Parse by HOARD.
     License and release publicly (est: July 2018)
-
+    * COMPLETE *
 
 ## PHASE 2:
-    Add additional log types (non-JSON Structured) for RSYSLOG/etc.
-    Add file-based tailer for environments where log files are not written to SIEM
+    Add additional log types (non-JSON Structured) for RSYSLOG/etc.  * COMPLETE *
+    Add file-based tailer for environments where log files are not written to SIEM (Suricata Example Done)
         This way raw logs can be stored "off machine" where disk space isn't a premium but the filters can still be used to search.
     Consider using a publish/subscribe queue so that we can integrate with other solutions at larger instituions.
 
 ## PHASE 3:
     Implement Searching in Graylog/ELK/Splunk and Slack or Email based alerting.
         May consider writing a local file to the system and indexing with SIEM, which could do subsearching and alerting?
-    Implement STIX Parser for consuming data in industry standard format. 
+    Implement STIX Parser for consuming data in industry standard format.
     Develop installer and daemon mode/system init scripts.
     Build Docker container for easier deployment to some environments
 
